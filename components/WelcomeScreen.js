@@ -1,29 +1,22 @@
 import React, { Component } from 'react';
-import { StackNavigator } from 'react-navigation';
-import Header from './Header';
-import RightButton from './RightButton';
-import LeftButton from './LeftButton';
 import {
-  Platform,
   StyleSheet,
   Text,
-  ScrollView,
   Image,
-  View,
-  TextInput,
   Button,
-  Picker,
   Animated,
   Easing,
-  Alert
+  AsyncStorage
 } from 'react-native';
 
+import Header from './Header';
+import LogOut from './LogOut';
+
+/**
+ *
+ */
 export default class WelcomeScreen extends Component {
-  state = {
-    fadeAnim: new Animated.Value(0),
-    imageSize: new Animated.Value(0),
-    text: 'Welcome to Post IT',
-  }
+
   static navigationOptions = ({ navigation }) => {
     return {
       headerTitle: <Header />,
@@ -35,7 +28,7 @@ export default class WelcomeScreen extends Component {
       ),
       headerRight: (
         <Button
-          title="bbb"
+          title="->"
           color="#EBEBEB"
         />
       ),
@@ -46,38 +39,77 @@ export default class WelcomeScreen extends Component {
       },
     };
   };
-  
+
+  state = {
+    fadeAnim: new Animated.Value(0),
+    imageSize: new Animated.Value(0),
+    text: 'Welcome to Post IT',
+    token: null,
+  }
+
   componentDidMount = () => {
-    Animated.timing(                  // Animate over time
-      this.state.fadeAnim,            // The animated value to drive
-      {
-        toValue: 1,                   // Animate to opacity: 1 (opaque)
-        duration: 10000,              // Make it take a while
+    AsyncStorage.getItem('token', (err, result) => {
+      if (result) {
+        this.setState({
+          token: result
+        });
       }
-    ).start();                  // Starts the animation
+    });
+    Animated.timing(
+      this.state.fadeAnim,
+      {
+        toValue: 1,
+        duration: 10000,
+      }
+    ).start();
     Animated.timing(this.state.imageSize, {
       toValue: 400,
       easing: Easing.back(),
       duration: 4000,
     }).start();
     setTimeout(() => {
-      // this.setState({
-      //   text: 'Emmanuel',
-      // })
-      this.props.navigation.navigate('SignIn');
+      if (this.state.token) {
+        this.props.navigation.navigate('Board');
+      } else {
+        this.props.navigation.navigate('SignIn');
+      }
     }, 10000);
   }
 
+  // showLogOutButton = () => {
+  //   if (this.state.token) {
+  //     return (
+  //       <Button
+  //         color="#8AC6C6"
+  //         title="Log Out"
+  //         onPress={() => {
+  //           AsyncStorage.removeItem('token', (err, result) => {
+  //             if (result) {
+  //               this.setState({
+  //                 token: result
+  //               });
+  //             }
+  //           });
+  //         }}
+  //       />
+  //     );
+  //   }
+  // }
+
+
+  /**
+   *
+  */
   render() {
-    let { fadeAnim, imageSize, text } = this.state;
+    const { fadeAnim, imageSize, text } = this.state;
     return (
-      <Animated.View                 // Special animatable View
+      <Animated.View
         style={{
           ...this.props.style,
           opacity: fadeAnim,
           justifyContent: 'center',
           alignItems: 'center',
-          paddingTop: 100,      // Bind opacity to animated value
+          paddingTop: 100,
         }}
       >
         <Image
@@ -86,9 +118,25 @@ export default class WelcomeScreen extends Component {
             height: '50%',
             resizeMode: Image.resizeMode.contain,
           }}
-          source={{ uri: 'http://res.cloudinary.com/damc3mj5u/image/upload/v1520541663/BabyTuxAlpha_vp4ruc.png' }}
+          source={{
+            uri: 'http://res.cloudinary.com/damc3mj5u/image/upload/v1520541663/BabyTuxAlpha_vp4ruc.png'
+          }}
         />
         <Text style={{ fontSize: 30, }}>{ text }</Text>
+        <Button
+          title="Continue"
+          color="#EBEBEB"
+          onPress={() => {
+            if (this.state.token) {
+              this.props.navigation.navigate('Board');
+            } else {
+              this.props.navigation.navigate('SignIn');
+            }
+          }}
+        />
+        {/* {
+          this.showLogOutButton()
+        } */}
       </Animated.View>
     );
   }

@@ -1,85 +1,17 @@
 import React, { Component } from 'react';
-import { StackNavigator } from 'react-navigation';
-import Header from './Header';
-import RightButton from './RightButton';
-import LeftButton from './LeftButton';
 import {
-  Platform,
   StyleSheet,
   Text,
   ScrollView,
-  Image,
   View,
   TextInput,
-  Button
+  Button,
+  Alert,
+  AsyncStorage
 } from 'react-native';
-
-export default class SignIn extends Component {
-  static navigationOptions = {
-    headerTitle: <Header />,
-    headerLeft: (
-      <Button
-        title="ccc"
-        color="#EBEBEB"
-      />
-    ),
-    headerRight: (
-      <Button
-        title="bbb"
-        color="#EBEBEB"
-      />
-    ),
-    headerStyle: {
-      backgroundColor: '#8AC6C6',
-      paddingLeft: 10,
-      paddingRight: 10,
-    },
-  };
-  render() {
-    return (
-      <View style={styles.container}>
-        <View style={styles.section}>
-          <Text style={styles.pageTitle}>
-            Sign In
-          </Text>
-          <View style={styles.formContainer}>
-            <ScrollView style={{ width: '100%',}}>
-              <View style={styles.formHolder}>
-                <TextInput
-                  placeholder="Username"
-                  style={styles.textInput}
-                />
-                <TextInput
-                  placeholder="password"
-                  style={styles.textInput}
-                />
-              </View>
-              <View style={styles.buttonHolder}>
-                <Button
-                  title="Sign In"
-                  onPress={() => { console.log(1234); } }
-                />
-                <Button
-                  title="Sign Up"
-                  onPress={() => { this.props.navigation.navigate('SignUp'); } }
-                />
-              </View>
-              <View style={styles.googleBtn}>
-                <Button
-                  title="Continue with Google"
-                  onPress={() => { this.props.navigation.navigate('Board'); } }
-                />
-                <Text style={styles.pageTitle} onPress={() => { this.props.navigation.navigate('Welcome'); } }>
-                  forgot password
-                </Text>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </View>
-    );
-  }
-}
+import Header from './Header';
+import { signIn } from '../actions/authAction';
+import Loader from './Loader';
 
 const styles = StyleSheet.create({
   container: {
@@ -154,7 +86,7 @@ const styles = StyleSheet.create({
   buttonHolder: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    alignItems: "flex-start",
+    alignItems: 'flex-start',
     width: '85%',
     margin: 20,
   },
@@ -173,3 +105,142 @@ const styles = StyleSheet.create({
 
   }
 });
+
+/**
+ *
+ */
+export default class SignIn extends Component {
+  /**
+   *
+   */
+  static navigationOptions = {
+    headerTitle: <Header />,
+    headerLeft: (
+      <Button
+        title="ccc"
+        color="#EBEBEB"
+      />
+    ),
+    headerRight: (
+      <Button
+        title="bbb"
+        color="#EBEBEB"
+      />
+    ),
+    headerStyle: {
+      backgroundColor: '#8AC6C6',
+      paddingLeft: 10,
+      paddingRight: 10,
+    },
+  };
+  /**
+   *
+   * @param {*} props
+   */
+  constructor(props) {
+    super(props);
+    this.state = {
+      username: '',
+      password: '',
+      showLoader: false,
+      token: '',
+    };
+  }
+
+  componentDidMount = () => {
+    AsyncStorage.getItem('token', (err, result) => {
+      if (result) {
+        this.setState({
+          token: result
+        });
+      }
+    });
+  }
+
+  submit = () => {
+    this.setState({
+      showLoader: true
+    });
+    const { username, password } = this.state;
+    signIn({ username, password })
+      .then((response) => {
+        this.setState({
+          showLoader: false
+        });
+        if (response.message === 'Welcome') {
+          try {
+            AsyncStorage.setItem('token', response.token, () => {
+              this.props.navigation.navigate('Board');
+            });
+          } catch (err) {
+            Alert.alert(err);
+          }
+        } else {
+          Alert.alert(response);
+        }
+      })
+      .catch((error) => {
+        this.setState({
+          showLoader: false
+        });
+        Alert.alert(error);
+      });
+  }
+
+  /**
+   *
+   */
+  render() {
+    return (
+      <View style={styles.container}>
+        <View style={styles.section}>
+          <Text style={styles.pageTitle}>
+            Sign In
+          </Text>
+          <View style={styles.formContainer}>
+            <ScrollView style={{ width: '100%' }}>
+              <View style={styles.formHolder}>
+                <TextInput
+                  placeholder="Username"
+                  style={styles.textInput}
+                  value={this.state.username}
+                  onChangeText={ username => this.setState({ username })}
+                />
+                <TextInput
+                  placeholder="Password"
+                  style={styles.textInput}
+                  value={this.state.password}
+                  onChangeText={password => this.setState({ password })}
+                  secureTextEntry
+                />
+              </View>
+              <View style={styles.buttonHolder}>
+                <Button
+                  title="Sign In"
+                  onPress={this.submit}
+                />
+                <Loader showLoader={this.state.showLoader} />
+                <Button
+                  title="Sign Up"
+                  onPress={() => { this.props.navigation.navigate('SignUp'); }}
+                />
+              </View>
+              <View style={styles.googleBtn}>
+                <Button
+                  title="Continue with Google"
+                  onPress={() => { this.props.navigation.navigate('Board'); } }
+                />
+                <Text
+                  style={styles.pageTitle}
+                  onPress={() => { this.props.navigation.navigate('Welcome'); }}
+                >
+                  forgot password
+                </Text>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </View>
+    );
+  }
+}

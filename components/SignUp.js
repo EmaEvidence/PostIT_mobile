@@ -1,98 +1,16 @@
-import React, { Component } from 'react';
-import { StackNavigator } from 'react-navigation';
-import Header from './Header';
-import {
+import React, { Component } from 'react';import {
   StyleSheet,
   Text,
   ScrollView,
-  Image,
   View,
   TextInput,
-  Button
+  Button,
+  Alert,
+  AsyncStorage
 } from 'react-native';
-
-export default class SignUp extends Component {
-  static navigationOptions = {
-    headerTitle: <Header />,
-    headerLeft: (
-      <Button
-        title="ccc"
-        color="#EBEBEB"
-      />
-    ),
-    headerRight: (
-      <Button
-        title="bbb"
-        color="#EBEBEB"
-      />
-    ),
-    headerStyle: {
-      backgroundColor: '#8AC6C6',
-      paddingLeft: 10,
-      paddingRight: 10,
-    },
-  };
-  render() {
-    return (
-      <View style={styles.container}>
-        <View style={styles.section}>
-          <Text style={styles.pageTitle}>
-            Sign Up
-          </Text>
-          <View style={styles.formContainer}>
-            <ScrollView style={{ width: '100%',}}>
-              <View style={styles.formHolder}>
-                <TextInput
-                  placeholder="Firstname Lastname"
-                  style={styles.textInput}
-                />
-                <TextInput
-                  placeholder="Username"
-                  style={styles.textInput}
-                />
-                <TextInput
-                  placeholder="Email"
-                  style={styles.textInput}
-                />
-                <TextInput
-                  placeholder="Phone Number"
-                  style={styles.textInput}
-                />
-                <TextInput
-                  placeholder="Password"
-                  style={styles.textInput}
-                />
-                <TextInput
-                  placeholder="Confirm Password"
-                  style={styles.textInput}
-                />
-              </View>
-              <View style={styles.buttonHolder}>
-                <Button
-                  title="Sign Up"
-                  onPress={() => { console.log(1234); } }
-                />
-                <Button
-                  title="Sign In"
-                  onPress={() => { this.props.navigation.navigate('Home'); } }
-                />
-              </View>
-              <View style={styles.googleBtn}>
-                <Button
-                  title="Continue with Google"
-                  onPress={() => { console.log(1234); } }
-                />
-                <Text style={styles.pageTitle}>
-                  forgot password
-                </Text>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </View>
-    );
-  }
-}
+import { signUp } from '../actions/authAction';
+import Header from './Header';
+import Loader from './Loader';
 
 const styles = StyleSheet.create({
   container: {
@@ -170,7 +88,7 @@ const styles = StyleSheet.create({
   buttonHolder: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    alignItems: "flex-start",
+    alignItems: 'flex-start',
     width: '95%',
     margin: 10,
   },
@@ -189,3 +107,160 @@ const styles = StyleSheet.create({
 
   }
 });
+
+/** */
+export default class SignUp extends Component {
+  static navigationOptions = {
+    headerTitle: <Header />,
+    headerLeft: (
+      <Button
+        title="ccc"
+        color="#EBEBEB"
+      />
+    ),
+    headerRight: (
+      <Button
+        title="bbb"
+        color="#EBEBEB"
+      />
+    ),
+    headerStyle: {
+      backgroundColor: '#8AC6C6',
+      paddingLeft: 10,
+      paddingRight: 10,
+    },
+  };
+
+  /**
+   * 
+   * @param {*} props 
+   */
+  constructor(props) {
+    super(props);
+    this.state = {
+      name: '',
+      username: '',
+      password: '',
+      email: '',
+      phone: '',
+      confirmPassword: '',
+      showLoader: false,
+    };
+  }
+
+  submit = () => {
+    this.setState({
+      showLoader: true
+    });
+    if (this.state.confirmPassword !== this.state.password) {
+      Alert.alert('Password does not match');
+    } else {
+      const {
+        name,
+        username,
+        email,
+        phone,
+        password
+      } = this.state;
+      signUp({
+        name,
+        username,
+        email,
+        phone,
+        password
+      })
+        .then((response) => {
+          this.setState({
+            showLoader: false
+          });
+          if (response.message === 'Welcome') {
+            try {
+              AsyncStorage.setItem('token', response.token, () => {
+                this.props.navigation.navigate('Board');
+              });
+            } catch (err) {
+              Alert.alert(err);
+            }
+          } else {
+            Alert.alert(response);
+          }
+        })
+        .catch((error) => {
+          this.setState({
+            showLoader: false
+          });
+          Alert.alert(error);
+        });
+    }
+  }
+  /** */
+  render() {
+    return (
+      <View style={styles.container}>
+        <View style={styles.section}>
+          <Text style={styles.pageTitle}>
+            Sign Up
+          </Text>
+          <View style={styles.formContainer}>
+            <ScrollView style={{ width: '100%', }}>
+              <View style={styles.formHolder}>
+                <TextInput
+                  placeholder="Firstname Lastname"
+                  style={styles.textInput}
+                  onChangeText={name => this.setState({ name })}
+                />
+                <TextInput
+                  placeholder="Username"
+                  style={styles.textInput}
+                  onChangeText={username => this.setState({ username })}
+                />
+                <TextInput
+                  placeholder="Email"
+                  style={styles.textInput}
+                  onChangeText={email => this.setState({ email })}
+                />
+                <TextInput
+                  placeholder="Phone Number"
+                  style={styles.textInput}
+                  onChangeText={phone => this.setState({ phone })}
+                />
+                <TextInput
+                  placeholder="Password"
+                  style={styles.textInput}
+                  secureTextEntry
+                  onChangeText={password => this.setState({ password })}
+                />
+                <TextInput
+                  placeholder="Confirm Password"
+                  style={styles.textInput}
+                  secureTextEntry
+                  onChangeText={confirmPassword => this.setState({ confirmPassword })}
+                />
+              </View>
+              <View style={styles.buttonHolder}>
+                <Button
+                  title="Sign Up"
+                  onPress={this.submit}
+                />
+                <Loader showLoader={this.state.showLoader} />
+                <Button
+                  title="Sign In"
+                  onPress={() => { this.props.navigation.navigate('Home'); }}
+                />
+              </View>
+              <View style={styles.googleBtn}>
+                <Button
+                  title="Continue with Google"
+                  onPress={() => { console.log(1234); }}
+                />
+                <Text style={styles.pageTitle}>
+                  forgot password
+                </Text>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </View>
+    );
+  }
+}
